@@ -1,6 +1,6 @@
 /* Service worker — deixa o app funcionar 100% offline.
    Ao mudar qualquer arquivo do app, aumente o número da versão abaixo. */
-var VERSAO = 'carleon-v1';
+var VERSAO = 'carleon-v2';
 var ARQUIVOS = [
   './',
   './index.html',
