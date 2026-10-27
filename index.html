@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Gerador de orçamentos do Carleon Pintor — Pinturas em Gerais.">
+<meta name="theme-color" content="#003f6f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Orçamento">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>Carleon Pintor — Orçamento</title>
+<script src="html2canvas.min.js"></script>
+<style>
+/* Fontes locais (funcionam sem internet) */
+@font-face { font-family: 'Inter'; font-weight: 400 800; font-style: normal; font-display: swap; src: url('fonts/inter.woff2') format('woff2'); }
+@font-face { font-family: 'Fira Sans'; font-weight: 800; font-style: normal; font-display: swap; src: url('fonts/fira-sans-800.woff2') format('woff2'); }
+@font-face { font-family: 'Merriweather Sans'; font-weight: 300 800; font-style: normal; font-display: swap; src: url('fonts/merriweather-sans.woff2') format('woff2'); }
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --azul: #003f6f;
+  --azul-esc: #002c4e;
+  --laranja: #fdb94e;
+  --borda: #dde3ee;
+  --bg: #f0f3f9;
+  --txt: #12263f;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: 'Inter', Arial, sans-serif;
+  background: var(--bg);
+  padding: 12px 10px 60px;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* ── TOPO APP ── */
+.topo { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.badge {
+  background: var(--azul); color: #fff;
+  font-weight: 800; font-size: 14px; letter-spacing: .5px;
+  padding: 7px 13px; border-radius: 7px; white-space: nowrap;
+}
+.badge span { color: var(--laranja); }
+.sub { font-size: 10px; color: #7a8caa; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+
+/* ── CARD FORMULÁRIO ── */
+.card {
+  background: #fff; border-radius: 12px; padding: 18px 14px;
+  width: 100%; margin-bottom: 20px;
+  box-shadow: 0 4px 20px rgba(0,63,111,0.12);
+}
+.card-titulo {
+  font-size: 22px; font-weight: 800; color: var(--azul);
+  margin-bottom: 18px; display: flex; align-items: center; gap: 8px;
+}
+.card-titulo::before {
+  content: ''; width: 5px; height: 24px; background: var(--laranja);
+  border-radius: 3px; display: block; flex-shrink: 0;
+}
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.campo { margin-bottom: 14px; }
+label { display: block; font-size: 10px; font-weight: 800; color: var(--azul); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 5px; }
+input[type=text] {
+  width: 100%; padding: 12px 11px; border: 1.5px solid var(--borda); border-radius: 9px;
+  font-size: 16px; font-family: inherit; color: var(--txt);
+  outline: none; background: #fff; -webkit-appearance: none; appearance: none;
+}
+input:focus { border-color: var(--azul); }
+input::placeholder { color: #b8c4d8; }
+
+/* Caixinha "somente mão de obra" (só no formulário, não vai pro recibo) */
+.chk {
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  font-size: 12px; font-weight: 700; color: var(--azul);
+  text-transform: none; letter-spacing: 0; margin: 0 0 16px;
+  padding: 8px 10px; background: #f4f7fc; border: 1.5px solid var(--borda); border-radius: 9px;
+  width: fit-content; user-select: none;
+}
+.chk input { width: 18px; height: 18px; accent-color: var(--azul); flex-shrink: 0; }
+
+.sec-titulo { font-size: 10px; font-weight: 800; color: var(--azul); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+.cab { display: grid; grid-template-columns: 1fr 68px 38px; gap: 8px; margin-bottom: 4px; }
+.cab span { font-size: 10px; color: #a0b0cc; font-weight: 700; text-transform: uppercase; }
+.cab span:nth-child(2) { text-align: center; }
+.item-row { display: grid; grid-template-columns: 1fr 68px 38px; gap: 8px; margin-bottom: 8px; align-items: center; }
+.item-row input { padding: 10px 9px; font-size: 15px; }
+.item-row .item-qtd { text-align: center; }
+.btn-del {
+  width: 38px; height: 42px; border: 1.5px solid var(--borda); border-radius: 9px;
+  background: none; color: #bbb; font-size: 20px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; touch-action: manipulation;
+}
+.btn-del:active { border-color: #e24b4a; color: #e24b4a; }
+.btn-add {
+  width: 100%; padding: 11px; border: 1.5px dashed #b0bcd4; border-radius: 9px;
+  background: none; color: var(--azul); font-size: 14px; font-family: inherit;
+  font-weight: 700; cursor: pointer; margin: 2px 0 18px; touch-action: manipulation;
+}
+.btn-add:active { background: #eef2fa; }
+.btn-gerar {
+  width: 100%; padding: 15px; background: var(--azul); color: #fff; border: none;
+  border-radius: 10px; font-size: 16px; font-family: inherit;
+  font-weight: 800; cursor: pointer; touch-action: manipulation; -webkit-appearance: none;
+}
+.btn-gerar:active { background: var(--azul-esc); }
+
+/* ── PREVIEW ── */
+.preview-wrap { width: 100%; display: none; }
+.acoes { display: flex; gap: 10px; margin-bottom: 10px; }
+.btn-enviar {
+  flex: 1; padding: 14px; background: #25a244; color: #fff; border: none;
+  border-radius: 10px; font-size: 14px; font-family: inherit;
+  font-weight: 800; cursor: pointer; touch-action: manipulation; -webkit-appearance: none;
+}
+.btn-enviar:active { background: #1d8537; }
+.btn-jpg {
+  flex: 1; padding: 14px; background: var(--laranja); color: var(--azul-esc); border: none;
+  border-radius: 10px; font-size: 14px; font-family: inherit;
+  font-weight: 800; cursor: pointer; touch-action: manipulation; -webkit-appearance: none;
+}
+.btn-jpg:active { background: #e6a23a; }
+.btn-novo {
+  padding: 14px; background: #fff; color: var(--azul); border: 2px solid var(--azul);
+  border-radius: 10px; font-size: 14px; font-family: inherit;
+  font-weight: 800; cursor: pointer; white-space: nowrap; touch-action: manipulation;
+}
+.btn-novo:active { background: #eef2fa; }
+button:disabled { opacity: .6; }
+.aviso { font-size: 12px; color: #7a8caa; margin-bottom: 14px; font-weight: 600; min-height: 0; }
+
+/* ══════════════════════════════════════════════════════════
+   RECIBO — layout fiel ao modelo do Canva (A4 = 794 x 1123 px)
+   O recibo tem tamanho fixo; no celular só é reduzido (zoom),
+   então a tela e a imagem salva ficam IDÊNTICAS.
+══════════════════════════════════════════════════════════ */
+#recibo-box { width: 100%; position: relative; overflow: hidden; border-radius: 6px; box-shadow: 0 4px 20px rgba(0,63,111,0.15); background: #fff; }
+#recibo {
+  width: 794px; min-height: 1123px;
+  background: #fff; position: relative;
+  display: flex; flex-direction: column;
+  transform-origin: top left;
+  color: var(--azul);
+}
+
+.r-header { background: var(--azul); height: 87px; flex-shrink: 0; position: relative; }
+.r-tag {
+  position: absolute; left: 39px; top: 38px;
+  background: var(--laranja); color: var(--azul);
+  font-family: 'Inter', Arial, sans-serif; font-weight: 700; font-size: 17px; letter-spacing: -.2px;
+  line-height: 1; padding: 5px 9px 6px; border-radius: 2px; white-space: nowrap;
+}
+.r-icons { position: absolute; top: 63px; right: 66px; display: flex; gap: 67px; z-index: 2; }
+.r-ico {
+  width: 71px; height: 71px; border-radius: 50%;
+  background: var(--azul); border: 1.5px solid var(--laranja);
+  display: flex; align-items: center; justify-content: center;
+}
+.r-ico svg { width: 40px; height: 40px; }
+
+.r-body { padding: 0 73px 0 59px; flex: 1; display: flex; flex-direction: column; }
+
+.r-topo {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin: 92px 0 0 9px;
+}
+.r-titulo {
+  font-family: 'Fira Sans', 'Inter', Arial, sans-serif; font-weight: 800;
+  font-size: 58px; letter-spacing: -.5px; line-height: 1; color: var(--azul);
+}
+.r-data { font-family: 'Merriweather Sans', Arial, sans-serif; font-size: 16px; color: var(--azul); display: flex; align-items: baseline; gap: 18px; }
+.r-data b { font-weight: 400; display: inline-block; width: 128px; text-align: center; border-bottom: 1px solid var(--azul); padding-bottom: 2px; }
+
+.r-linha {
+  display: flex; align-items: baseline; gap: 10px;
+  font-family: 'Merriweather Sans', Arial, sans-serif; font-size: 16px; color: var(--azul);
+  margin: 0 0 0 9px;
+}
+.r-linha.l1 { margin-top: 30px; }
+.r-linha.l2 { margin-top: 10px; }
+.r-linha b { font-weight: 400; border-bottom: 1px solid var(--azul); padding: 0 7px 3px; max-width: 580px; line-height: 1.35; word-break: break-word; }
+
+table.r-tab { width: 100%; border-collapse: collapse; margin-top: 42px; }
+.r-tab td { border: 1px solid var(--azul); }
+.r-tab thead td {
+  background: var(--azul); color: #fff; text-align: center;
+  font-family: 'Inter', Arial, sans-serif; font-weight: 700; font-size: 16px;
+  height: 62px; border-color: var(--azul);
+}
+.r-tab thead td:last-child, .r-tab tbody td:last-child { width: 135px; }
+.r-tab tbody td {
+  text-align: center; font-family: 'Inter', Arial, sans-serif; font-weight: 700; font-size: 15.5px;
+  color: var(--azul); padding: 6px 10px; height: 32px; word-break: break-word;
+}
+
+table.r-mo { width: 100%; border-collapse: collapse; margin: 75px 0 0 3px; width: calc(100% - 3px); }
+.r-mo td {
+  height: 62px; text-align: center; font-family: 'Inter', Arial, sans-serif; font-weight: 700; font-size: 16px;
+  border: 1px solid var(--azul);
+}
+.r-mo td:first-child { background: var(--azul); color: #fff; }
+.r-mo td:last-child { width: 135px; color: var(--azul); letter-spacing: .3px; }
+.r-mo.sozinho { margin-top: 56px; }
+
+.r-footer {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  padding: 40px 73px 54px 68px; flex-shrink: 0; margin-top: auto;
+}
+.r-contato { font-family: 'Merriweather Sans', Arial, sans-serif; font-size: 20px; color: var(--azul); line-height: 1.75; }
+.r-brand-bot { text-align: center; }
+.r-brand-bot .rb {
+  background: var(--laranja); color: var(--azul);
+  font-family: 'Inter', Arial, sans-serif; font-weight: 800; font-size: 20px; letter-spacing: -.4px;
+  padding: 4px 10px 5px; border-radius: 3px; display: block; line-height: 1.2;
+}
+.r-brand-bot .rs {
+  font-family: 'Merriweather Sans', Arial, sans-serif; font-weight: 700; font-size: 11.5px; color: var(--azul);
+  letter-spacing: 3.1px; margin-top: 6px; text-transform: uppercase; white-space: nowrap;
+}
+</style>
+</head>
+<body>
+
+<header class="topo">
+  <div class="badge">CARLEON <span>PINTOR</span></div>
+  <div class="sub">Pinturas em Gerais</div>
+</header>
+
+<main>
+<!-- FORMULÁRIO -->
+<div class="card" id="form-section">
+  <h1 class="card-titulo">Novo Orçamento</h1>
+
+  <div class="campo">
+    <label for="f-cliente">Cliente</label>
+    <input type="text" id="f-cliente" placeholder="Ex: Emanuelle Silva" autocomplete="off" autocorrect="off">
+  </div>
+  <div class="campo">
+    <label for="f-servico">Serviço (opcional)</label>
+    <input type="text" id="f-servico" placeholder="Ex: Emassamento e pintura de duas paredes" autocomplete="off">
+  </div>
+  <div class="campo">
+    <label for="f-valor">Mão de obra (R$)</label>
+    <input type="text" id="f-valor" placeholder="Ex: 420" inputmode="decimal" autocomplete="off">
+  </div>
+
+  <label class="chk" for="f-so-mo">
+    <input type="checkbox" id="f-so-mo"> Somente mão de obra (sem materiais)
+  </label>
+
+  <div id="bloco-itens">
+    <div class="sec-titulo">Materiais do orçamento</div>
+    <div class="cab">
+      <span>Descrição</span><span>Qtd</span><span></span>
+    </div>
+    <div id="lista-itens">
+      <div class="item-row">
+        <input type="text" class="item-desc" placeholder="Ex: Galão 3,6 de massa corrida" autocomplete="off" autocorrect="off">
+        <input type="text" class="item-qtd" placeholder="01">
+        <button type="button" class="btn-del" aria-label="Remover item" onclick="delItem(this)">×</button>
+      </div>
+    </div>
+    <button type="button" class="btn-add" onclick="addItem()">+ Adicionar item</button>
+  </div>
+
+  <button type="button" class="btn-gerar" id="btn-gerar" onclick="gerar()">Gerar Orçamento</button>
+</div>
+
+<!-- PREVIEW -->
+<div class="preview-wrap" id="preview-section">
+  <div class="acoes">
+    <button type="button" class="btn-enviar" id="btn-enviar" onclick="enviar()">📤 Enviar foto + texto</button>
+  </div>
+  <div class="acoes">
+    <button type="button" class="btn-jpg" id="btn-jpg" onclick="baixarJPG()">💾 Salvar como JPG</button>
+    <button type="button" class="btn-novo" onclick="novo()">← Novo</button>
+  </div>
+  <p class="aviso" id="aviso"></p>
+
+  <div id="recibo-box">
+  <div id="recibo">
+    <div class="r-header">
+      <div class="r-tag">CARLEON PINTOR</div>
+    </div>
+    <div class="r-icons">
+      <!-- Rolo de pintura -->
+      <div class="r-ico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fdb94e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3.5" width="14" height="6" rx="1.6"/>
+          <path d="M17 6.5h2.5v4.5H11.5v2.5"/>
+          <rect x="10" y="13.5" width="3" height="7" rx="1"/>
+          <path d="M6.5 12.2c0 1.1-1 1.7-1 2.5a1 1 0 0 0 2 0c0-.8-1-1.4-1-2.5z"/>
+        </svg>
+      </div>
+      <!-- Cano / encanamento -->
+      <div class="r-ico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fdb94e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 6v8.5a4 4 0 0 0 8 0V6" stroke-width="3.2"/>
+          <path d="M5.5 4.5h5M13.5 4.5h5"/>
+          <path d="M6 20.5c0-.8-.8-1.2-.8-1.9M18 20.5c0-.8-.8-1.2-.8-1.9" stroke-width="1.3"/>
+        </svg>
+      </div>
+      <!-- Lâmpada com check -->
+      <div class="r-ico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fdb94e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2.8a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.1v.8h5v-.8c0-.8.4-1.5 1.1-2.1A6 6 0 0 0 12 2.8z"/>
+          <path d="M9.6 19.2h4.8M10.6 21.5h2.8"/>
+          <path d="M9.6 9l1.8 1.8 3.2-3.4"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="r-body">
+      <div class="r-topo">
+        <div class="r-titulo">ORÇAMENTO</div>
+        <div class="r-data"><span>DATA:</span><b id="r-data"></b></div>
+      </div>
+      <div class="r-linha l1"><span>Cliente:</span><b id="r-cliente"></b></div>
+      <div class="r-linha l2" id="linha-serv"><span>Serviço:</span><b id="r-servico"></b></div>
+
+      <table class="r-tab" id="tab-mat">
+        <thead><tr><td>Material</td><td>Quantidade</td></tr></thead>
+        <tbody id="r-tbody"></tbody>
+      </table>
+
+      <table class="r-mo" id="tab-mo">
+        <tr><td>Mão de obra</td><td id="r-valor"></td></tr>
+      </table>
+    </div>
+
+    <div class="r-footer">
+      <div class="r-contato">(86) 9 9447-8374<br>@carleonpintor</div>
+      <div class="r-brand-bot">
+        <span class="rb">CARLEON PINTOR</span>
+        <div class="rs">Pinturas em Gerais</div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+</main>
+
+<script>
+/* Texto padrão enviado junto com a foto */
+var TEXTO_PADRAO =
+  'Olá, tudo bem? 😊\n' +
+  'Segue o seu orçamento conforme combinado.\n\n' +
+  'Formas de pagamento:\n' +
+  '💸 Pix\n' +
+  '💳 Cartão de crédito (parcelas com acréscimo)\n' +
+  '💳 Cartão de débito\n' +
+  '💵 Dinheiro em Espécie\n\n' +
+  'Qualquer dúvida ou ajuste, fico à disposição!\n' +
+  '👉 Carleon Pintor —https://www.instagram.com/carleonpintor?igsh=OWR4aWVpb3FidzN4 Pinturas e Texturas';
+
+var A4_W_PX = 794;   // 210mm a 96dpi
+var A4_H_PX = 1123;  // 297mm a 96dpi
+var CHAVE = 'carleon_rascunho';
+
+/* ── Utilitários ── */
+function esc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function parseValor(txt) {
+  var s = String(txt).replace(/[^\d.,]/g, '');
+  if (s.indexOf(',') !== -1) s = s.replace(/\./g, '').replace(',', '.');
+  var n = parseFloat(s);
+  return isNaN(n) ? NaN : n;
+}
+
+function hoje() { return new Date().toLocaleDateString('pt-BR'); }
+
+/* ── Itens ── */
+function novaLinha(desc, qtd) {
+  var row = document.createElement('div');
+  row.className = 'item-row';
+  row.innerHTML =
+    '<input type="text" class="item-desc" placeholder="Descrição do item" autocomplete="off">' +
+    '<input type="text" class="item-qtd" placeholder="Qtd">' +
+    '<button type="button" class="btn-del" aria-label="Remover item" onclick="delItem(this)">×</button>';
+  row.querySelector('.item-desc').value = desc || '';
+  row.querySelector('.item-qtd').value = qtd || '';
+  return row;
+}
+
+function addItem() {
+  var row = novaLinha();
+  document.getElementById('lista-itens').appendChild(row);
+  row.querySelector('.item-desc').focus();
+}
+
+function delItem(btn) {
+  if (document.querySelectorAll('.item-row').length === 1) {
+    var r = btn.closest('.item-row');
+    r.querySelector('.item-desc').value = '';
+    r.querySelector('.item-qtd').value = '';
+  } else {
+    btn.closest('.item-row').remove();
+  }
+  salvarRascunho();
+}
+
+/* ── Caixinha "somente mão de obra" ── */
+function atualizaModo() {
+  var so = document.getElementById('f-so-mo').checked;
+  document.getElementById('bloco-itens').style.display = so ? 'none' : 'block';
+}
+
+/* ── Rascunho (não perde o que foi digitado se a página recarregar) ── */
+function salvarRascunho() {
+  try {
+    var itens = [];
+    document.querySelectorAll('.item-row').forEach(function (r) {
+      itens.push([r.querySelector('.item-desc').value, r.querySelector('.item-qtd').value]);
+    });
+    localStorage.setItem(CHAVE, JSON.stringify({
+      cliente: document.getElementById('f-cliente').value,
+      servico: document.getElementById('f-servico').value,
+      valor: document.getElementById('f-valor').value,
+      soMO: document.getElementById('f-so-mo').checked,
+      itens: itens
+    }));
+  } catch (e) {}
+}
+
+function restaurarRascunho() {
+  try {
+    var d = JSON.parse(localStorage.getItem(CHAVE) || 'null');
+    if (!d) return;
+    document.getElementById('f-cliente').value = d.cliente || '';
+    document.getElementById('f-servico').value = d.servico || '';
+    document.getElementById('f-valor').value = d.valor || '';
+    document.getElementById('f-so-mo').checked = !!d.soMO;
+    if (d.itens && d.itens.length) {
+      var lista = document.getElementById('lista-itens');
+      lista.innerHTML = '';
+      d.itens.forEach(function (it) { lista.appendChild(novaLinha(it[0], it[1])); });
+    }
+  } catch (e) {}
+}
+
+/* ── Zoom do recibo para caber na tela (a imagem exportada não é afetada) ── */
+function ajustaEscala() {
+  var box = document.getElementById('recibo-box');
+  var rec = document.getElementById('recibo');
+  if (document.getElementById('preview-section').style.display !== 'block') return;
+  var s = box.parentElement.clientWidth / A4_W_PX;
+  rec.style.transform = 'scale(' + s + ')';
+  box.style.height = (rec.offsetHeight * s) + 'px';
+}
+window.addEventListener('resize', ajustaEscala);
+
+/* ── Gerar orçamento ── */
+function gerar() {
+  var cliente = document.getElementById('f-cliente').value.trim();
+  var servico = document.getElementById('f-servico').value.trim();
+  var valor   = document.getElementById('f-valor').value.trim();
+  var soMO    = document.getElementById('f-so-mo').checked;
+  if (!cliente) { alert('Preencha o nome do cliente.'); return; }
+
+  var html = '';
+  if (!soMO) {
+    var rows = document.querySelectorAll('.item-row'), tem = false;
+    for (var i = 0; i < rows.length; i++) {
+      var desc = rows[i].querySelector('.item-desc').value.trim();
+      var qtd  = rows[i].querySelector('.item-qtd').value.trim();
+      if (desc) {
+        tem = true;
+        html += '<tr><td>' + esc(desc) + '</td><td>' + esc(qtd || '—') + '</td></tr>';
+      }
+    }
+    if (!tem) { alert('Adicione pelo menos um item ou marque "Somente mão de obra".'); return; }
+  } else if (isNaN(parseValor(valor))) {
+    alert('Informe o valor da mão de obra.'); return;
+  }
+
+  var vNum = parseValor(valor);
+  var vFmt = isNaN(vNum) ? '—' : 'R$ ' + vNum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  document.getElementById('r-data').textContent    = hoje();
+  document.getElementById('r-cliente').textContent = cliente.toUpperCase();
+  document.getElementById('r-servico').textContent = servico;
+  document.getElementById('linha-serv').style.display = servico ? 'flex' : 'none';
+  document.getElementById('r-tbody').innerHTML     = html;
+  document.getElementById('tab-mat').style.display = soMO ? 'none' : 'table';
+  document.getElementById('tab-mo').className      = 'r-mo' + (soMO ? ' sozinho' : '');
+  document.getElementById('r-valor').textContent   = vFmt;
+  document.getElementById('aviso').textContent     = '';
+  document.getElementById('form-section').style.display    = 'none';
+  document.getElementById('preview-section').style.display = 'block';
+  ajustaEscala();
+  salvarRascunho();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function novo() {
+  document.getElementById('form-section').style.display    = 'block';
+  document.getElementById('preview-section').style.display = 'none';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ── Captura do recibo em A4 (retorna Promise<canvas>) ── */
+function capturar() {
+  var box = document.getElementById('recibo-box');
+  var el = document.getElementById('recibo');
+  var antes = { t: el.style.transform, h: box.style.height, o: box.style.overflow, r: box.style.borderRadius, s: box.style.boxShadow };
+  function restaurar() {
+    el.style.transform = antes.t; box.style.height = antes.h; box.style.overflow = antes.o;
+    box.style.borderRadius = antes.r; box.style.boxShadow = antes.s;
+    ajustaEscala();
+  }
+
+  el.style.transform = 'none';
+  box.style.height = 'auto';
+  box.style.overflow = 'visible';
+  box.style.borderRadius = '0';
+  box.style.boxShadow = 'none';
+
+  var fontes = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+  return fontes.then(function () { return new Promise(function (r) { setTimeout(r, 150); }); })
+    .then(function () {
+      var h = Math.max(A4_H_PX, el.offsetHeight);
+      return html2canvas(el, {
+        scale: 3, backgroundColor: '#ffffff', useCORS: true, allowTaint: true,
+        width: A4_W_PX, height: h, windowWidth: A4_W_PX, windowHeight: h,
+        scrollX: 0, scrollY: 0, logging: false
+      });
+    })
+    .then(function (canvas) { restaurar(); return canvas; },
+          function (err)    { restaurar(); throw err; });
+}
+
+function nomeArquivo() {
+  var nome = document.getElementById('r-cliente').textContent
+    .replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_');
+  var data = document.getElementById('r-data').textContent.replace(/\//g, '-');
+  return 'Orcamento_' + nome + '_' + data + '.jpg';
+}
+
+function canvasParaBlob(canvas) {
+  return new Promise(function (resolve) { canvas.toBlob(resolve, 'image/jpeg', 0.95); });
+}
+
+function baixarArquivo(blob, nome) {
+  var url = URL.createObjectURL(blob);
+  var link = document.createElement('a');
+  link.download = nome; link.href = url;
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+}
+
+function copiarTexto() {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(TEXTO_PADRAO).then(function () { return true; }, function () { return false; });
+  }
+  return Promise.resolve(false);
+}
+
+function travaBotao(id, txt, estado) {
+  var b = document.getElementById(id);
+  b.disabled = estado;
+  if (txt) b.textContent = txt;
+}
+
+/* ── Salvar só a imagem ── */
+function baixarJPG() {
+  travaBotao('btn-jpg', 'Gerando…', true);
+  capturar().then(canvasParaBlob).then(function (blob) {
+    baixarArquivo(blob, nomeArquivo());
+  }).catch(function () {
+    alert('Erro ao gerar imagem. Tente novamente.');
+  }).then(function () {
+    travaBotao('btn-jpg', '💾 Salvar como JPG', false);
+  });
+}
+
+/* ── Enviar foto + texto padrão juntos ── */
+function enviar() {
+  var aviso = document.getElementById('aviso');
+  travaBotao('btn-enviar', 'Gerando…', true);
+  aviso.textContent = '';
+
+  capturar().then(canvasParaBlob).then(function (blob) {
+    var arquivo = new File([blob], nomeArquivo(), { type: 'image/jpeg' });
+    var dados = { files: [arquivo], text: TEXTO_PADRAO };
+
+    if (navigator.canShare && navigator.canShare(dados) && navigator.share) {
+      return navigator.share(dados).catch(function (e) {
+        if (e && e.name === 'AbortError') return; // usuário cancelou
+        throw e;
+      });
+    }
+    // Plano B (computador / navegador sem suporte): baixa a foto e copia o texto
+    baixarArquivo(blob, arquivo.name);
+    return copiarTexto().then(function (ok) {
+      aviso.textContent = ok
+        ? '✅ Foto salva e texto copiado! Anexe a foto no WhatsApp e cole o texto (Ctrl+V).'
+        : '⚠️ Foto salva. Não consegui copiar o texto automaticamente.';
+    });
+  }).catch(function () {
+    alert('Erro ao gerar/enviar. Tente novamente.');
+  }).then(function () {
+    travaBotao('btn-enviar', '📤 Enviar foto + texto', false);
+  });
+}
+
+/* ── Inicialização ── */
+document.getElementById('f-so-mo').addEventListener('change', function () { atualizaModo(); salvarRascunho(); });
+document.getElementById('form-section').addEventListener('input', salvarRascunho);
+restaurarRascunho();
+atualizaModo();
+
+/* PWA: registra o service worker (precisa de http://localhost ou https) */
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+}
+</script>
+</body>
+</html>
